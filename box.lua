@@ -78,6 +78,15 @@ environment = {
   print = print,
 }
 
+-- TODO we need to check the names.list and use it to try to download everything
+--   basically, that's how the total archive is updated, pulling everything we can
+
+-- TODO I need to figure out how to identify conflicts so that my archive can be complete despite them
+--   if I find any, I have to fix them at the source, not here
+
+-- TODO we need to be able to pull metadata about all pastebin IDs, who made them, what are their titles
+--   use dkjson to store that info in a single object??
+
 utility.open("./root/bin/pkg", "r")(function(file)
   sandbox.run(file:read("*all"), { env = environment })
 end)

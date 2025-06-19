@@ -5,6 +5,15 @@ if not table.pack then
     return t
   end
 end
+if not table.unpack then
+  table.unpack = function(tab, start, finish)
+    local result = {}
+    for i = start or 1, finish or #tab do
+      result[#result + 1] = tab[i]
+    end
+    return result
+  end
+end
 
 local sandbox = {
   _VERSION      = "sandbox 0.5",

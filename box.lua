@@ -76,7 +76,7 @@ environment = {
   },
 }
 
-utility.open("root/bin/pkg", "r")(function(file)
+utility.open("./root/bin/pkg", "r")(function(file)
   sandbox.run(file:read("*all"), { env = environment })
 end)
 

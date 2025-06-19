@@ -1,3 +1,11 @@
+if not table.pack then
+  table.pack = function(...)
+    local t = {...}
+    t.n = select("#", ...)
+    return t
+  end
+end
+
 local sandbox = {
   _VERSION      = "sandbox 0.5",
   _DESCRIPTION  = "A pure-lua solution for running untrusted Lua code.",

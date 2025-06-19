@@ -64,8 +64,9 @@ environment = {
   shell = {
     run = function(path, ...)
       path = clean_path(path)
+      local arguments = {...}
       utility.open(path, "r")(function(file)
-        sandbox.run(file:read("*all"), { env = environment }, ...)
+        sandbox.run(file:read("*all"), { env = environment }, unpack(arguments))
       end)
     end,
     resolve = function(path) -- TODO fix?

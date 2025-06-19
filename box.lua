@@ -32,6 +32,9 @@ environment = {
       return contents:gmatch("[^\r\n]+")
     end,
     open = function(path, mode)
+      -- ComputerCraft doesn't care about whether the path exists, so we need to make sure not to care either!
+      local _path = utility.split_path_components(path)
+      os.execute("mkdir -p " .. _path)
       path = clean_path(path)
       return io.open(path, mode)
     end,

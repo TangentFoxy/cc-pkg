@@ -26,9 +26,9 @@ end
 -- ref: http://stackoverflow.com/questions/20282054/how-to-urldecode-a-request-uri-string-in-lua
 -- to encode table as parameters, see https://github.com/stuartpb/tvtropes-lua/blob/master/urlencode.lua
 
-return setmetatable{
+return setmetatable({
   encode = urlencode,
   decode = urldecode,
 }, {
-  __call = urlencode,
-}
+  __call = function(tab, ...) return urlencode(...) end,
+})

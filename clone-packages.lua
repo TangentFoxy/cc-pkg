@@ -27,7 +27,7 @@ get_id = function(name_or_id)
       end
     end
   end
-  return name_or_id
+  return name_or_id:gsub("\r", "")
 end
 
 local file_append = function(path, data)
@@ -46,7 +46,7 @@ end
 local download_id = function(id)
   local url = "https://pastebin.com/raw/" .. urlencode(id) .. "?cb=" .. ("%x"):format(math.random(0, 2^30))
   local data = utility.curl_read(url, "-A \"ComputerCraft package cloner\"")
-  file_append("ids.list", id)
+  file_append("ids.list", id) -- NOTE it really should be reread and output alphabetically..
   return data
 end
 
@@ -88,7 +88,7 @@ end
 
 local get_data
 get_data = function(name_or_id, path)
-  local data = download_id(id(name_or_id))
+  local data = download_id(get_id(name_or_id))
   local pkg_type = get_type(data)
 
   if pkg_type == "package" then
@@ -112,7 +112,7 @@ get_data = function(name_or_id, path)
       path = "missing-paths/" .. name_or_id
       file_save("broken-packages/" .. name_or_id, path .. "=" .. name_or_id)
     end
-    file_save("root" .. path, data)
+    file_save("./" .. path:gsub("/", "--"), data)
   end
 end
 
@@ -128,3 +128,4 @@ if not utility.file_exists("names.list") then
 end
 
 -- TODO actually do something! :D
+get_data(arg[1])

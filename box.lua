@@ -32,10 +32,10 @@ environment = {
       return contents:gmatch("[^\r\n]+")
     end,
     open = function(path, mode)
+      path = clean_path(path)
       -- ComputerCraft doesn't care about whether the path exists, so we need to make sure not to care either!
       local _path = utility.split_path_components(path)
       os.execute("mkdir -p " .. _path)
-      path = clean_path(path)
       return io.open(path, mode)
     end,
   },
@@ -70,10 +70,12 @@ environment = {
       end)
     end,
     resolve = function(path) -- TODO fix?
+      path = clean_path(path)
       print("WARNING! shell.resolve() not implemented.")
       return nil -- make sure whatever called this knows it failed
     end,
   },
+  print = print,
 }
 
 utility.open("./root/bin/pkg", "r")(function(file)

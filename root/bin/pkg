@@ -1,0 +1,153 @@
+-- to install: pastebin get 9Li3u4Rc /bin/pkg
+version = "1.5.10"
+
+-- check data type
+-- "package" a list of files to download
+-- "list" a list of packages
+-- "unknown" anything else
+function type(data)
+  if data:match("^/[%Z%C\n]+=[^\n]+\n?") then
+    return "package"
+  elseif data:match("^[%w%-]+=[%w%-]+\n?") then
+    return "list"
+  else
+    return "unknown"
+  end
+end
+
+-- recursively resolves names until a paste id is returned
+-- if a name fails to resolve, it will be returned
+function id(name_or_id)
+  if fs.exists("/etc/pkg/names.list") then
+    for line in io.lines("/etc/pkg/names.list") do
+      local first, last = line:find(name_or_id, 1, true)
+      local separator = line:find("=")
+      if first == 1 and last == (separator - 1) then
+        return id(line:sub(separator + 1))
+      end
+    end
+  end
+  return name_or_id
+end
+
+function append(path, data)
+  local file = io.open(path, "a")
+  if not file then error("Failed to open " .. path) end
+  file:write(data .. "\n")
+  file:close()
+end
+
+function save(path, data)
+  local file = io.open(path, "w")
+  if not file then error("Failed to open " .. path) end
+  file:write(data)
+  file:close()
+end
+
+-- downloads pastes by id, returning their data, or erroring
+function down(id)
+  local response = http.get(
+    "https://pastebin.com/raw/"..textutils.urlEncode(id).."?cb="..("%x"):format(math.random(0, 2^30)),
+    { ["User-Agent"] = "pkg v" .. version }
+  )
+  if response and response.getResponseCode() == 200 then
+    local data = response.readAll()
+    response.close()
+    append("/etc/pkg/ids.list", id)
+    return data
+  else
+    error("Failed to download https://pastebin.com/" .. id .. "\nIs " .. id .. " a valid paste id? You may be missing dependencies.")
+  end
+end
+
+-- adds a list of new packages to the master list
+function src(data)
+  local sources = {}
+  if fs.exists("/etc/pkg/names.list") then
+    for line in io.lines("/etc/pkg/names.list") do
+      local s = line:find("=")
+      sources[line:sub(1, s - 1)] = line:sub(s + 1)
+    end
+  end
+  for line in data:gmatch("([^\n]+)\n?") do
+    local s = line:find("=")
+    if s then
+      sources[line:sub(1, s - 1)] = line:sub(s + 1)
+    else
+      print("Invalid source: " .. line)
+    end
+  end
+  local file = io.open("/etc/pkg/names.list", "w")
+  if not file then error("Failed to open /etc/pkg/names.list") end
+  for k,v in pairs(sources) do
+    file:write(k .. "=" .. v .. "\n")
+  end
+  file:close()
+end
+
+-- recursively handles getting any source lists, packages, or files
+-- path is used for saving files only
+function get(name_or_id, path)
+  local data = down(id(name_or_id))
+  local pkg_type = type(data)
+  if pkg_type == "package" then
+    print("Getting package: " .. name_or_id)
+    for line in data:gmatch("([^\n]+)\n?") do
+      local s = line:find("=")
+      if s then
+        local name_or_id = line:sub(s + 1)
+        path = line:sub(1, s - 1)
+        print("Downloading " .. name_or_id .. " to " .. path)
+        get(name_or_id, path)
+      else
+        print("Invalid file: " .. line)
+      end
+    end
+    save("/etc/pkg/" .. name_or_id, data)
+  elseif pkg_type == "list" then
+    print("Adding sources: " .. name_or_id)
+    src(data)
+  else
+    if not path then
+      path = "/" .. name_or_id
+      save("/etc/pkg/" .. name_or_id, path .. "=" .. name_or_id)
+    end
+    save(path, data)
+  end
+end
+
+local function usage()
+  print("cc-pkg v"..version.."\nUsage:\n pkg get|run <package|id> <path>\nInstall or run a package or file by pastebin ID. Paths are used for files only.")
+end
+
+if not fs.exists("/etc/pkg/names.list") then
+  save("/etc/pkg/ids.list", "9Li3u4Rc\n")
+  save("/etc/pkg/pkg", "/bin/pkg=9Li3u4Rc")
+  get("AH4zw4n0") -- default packages list
+end
+
+local arg = {...}
+if #arg < 1 then usage() return end
+local command = table.remove(arg, 1) or ""
+-- command -> get | src | run | put
+-- arg[1]  -> name_or_id
+-- arg[2]  -> path
+
+if #command > 0 and fs.exists("/lib/pkg-commands/"..command) then
+  shell.run("/lib/pkg-commands/"..command, unpack(arg))
+elseif command == "get" or command == "src" or command == "run" then
+  get(unpack(arg))
+  if command == "run" then
+    local path = shell.resolve(arg[2] or arg[1]) -- specified path or package name might be its main binary name
+    if not path then path = shell.resolve(id(arg[1])) end -- last chance, maybe the resolved paste id is accessible
+    if path then
+      shell.run(path)
+    else
+      error("Could not determine what to run.")
+    end
+  end
+elseif command == "put" then
+  print("Not implemented.")
+else
+  usage()
+end

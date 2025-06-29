@@ -1,22 +1,5 @@
-if not table.pack then
-  table.pack = function(...)
-    local t = {...}
-    t.n = select("#", ...)
-    return t
-  end
-end
-if not table.unpack then
-  table.unpack = function(tab, start, finish)
-    local result = {}
-    for i = start or 1, finish or #tab do
-      result[#result + 1] = tab[i]
-    end
-    return result
-  end
-end
-
 local sandbox = {
-  _VERSION      = "sandbox 0.5",
+  _VERSION      = "sandbox 0.5.1",
   _DESCRIPTION  = "A pure-lua solution for running untrusted Lua code.",
   _URL          = "https://github.com/kikito/sandbox.lua",
   _LICENSE      = [[
@@ -45,6 +28,24 @@ local sandbox = {
   ]],
 
 }
+
+-- 0.5.1 fixing missing pack and unpack functions for some Lua versions
+if not table.pack then
+  table.pack = function(...)
+    local t = {...}
+    t.n = select("#", ...)
+    return t
+  end
+end
+if not table.unpack then
+  table.unpack = function(tab, start, finish)
+    local result = {}
+    for i = start or 1, finish or #tab do
+      result[#result + 1] = tab[i]
+    end
+    return result
+  end
+end
 
 -- quotas don't work in LuaJIT since debug.sethook works differently there
 local quota_supported = type(_G.jit) == "nil"

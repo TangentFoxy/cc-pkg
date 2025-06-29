@@ -7,7 +7,9 @@ local utility = require "lib.utility"
 local sandbox = utility.require("lib.sandbox")
 local urlencode = utility.require("lib.urlencode")
 
--- TODO detect that we're running in LuaJIT. If not in LuaJIT, exit with error about sandbox safety
+if type(jit) ~= "table" then
+  error("This script must be run in LuaJIT to prevent malicious code from breaking out of its sandbox.")
+end
 
 local clean_path = function(path)
   path = "./root/" .. path

@@ -11,6 +11,7 @@ if type(jit) ~= "table" then
   error("This script must be run in LuaJIT to prevent malicious code from breaking out of its sandbox.")
 end
 
+-- TODO fix the fact that this breaks any usage that would *not* escape..
 local clean_path = function(path)
   path = "./root/" .. path
   return path:gsub("%.%.", "") -- remove going up a directory to escape root
@@ -21,14 +22,14 @@ environment = {
   fs = {
     exists = function(path)
       path = clean_path(path)
-      return utility.file_exists(path)
+      return utility.is_file(path) -- TODO or should this be path_exists ?
     end,
   },
   io = {
     lines = function(path) -- NOTE not sure if this will work
       path = clean_path(path)
       local contents
-      utility.open(path, "r")(function(file)
+      utility.open(path, "r", function(file)
         contents = file:read("*all")
       end)
       return contents:gmatch("[^\r\n]+")
@@ -67,7 +68,7 @@ environment = {
     run = function(path, ...)
       path = clean_path(path)
       local arguments = {...}
-      utility.open(path, "r")(function(file)
+      utility.open(path, "r", function(file)
         sandbox.run(file:read("*all"), { env = environment }, unpack(arguments))
       end)
     end,
@@ -89,7 +90,7 @@ environment = {
 -- TODO we need to be able to pull metadata about all pastebin IDs, who made them, what are their titles
 --   use dkjson to store that info in a single object??
 
-utility.open("./root/bin/pkg", "r")(function(file)
+utility.open("./root/bin/pkg", "r", function(file)
   sandbox.run(file:read("*all"), { env = environment })
 end)
 
